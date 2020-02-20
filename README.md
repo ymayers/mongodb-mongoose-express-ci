@@ -1,11 +1,5 @@
 # ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png)  SOFTWARE ENGINEERING IMMERSIVE
 
-## Getting started
-
-1. Create a repo on GitHub.com called express-api-ci.
-2. Clone it down and follow the instructions on this readme.
-3. Your repo needs to be public and on GitHub.com so [Travis CI](https://travis-ci.org) can read it.
-
 # Express API - Continuous Integration
 
 What is Continuous Integration? Let's take 10min to read:
