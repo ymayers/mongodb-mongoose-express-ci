@@ -1,5 +1,8 @@
 # ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png)  SOFTWARE ENGINEERING IMMERSIVE
 
+![](https://www.exoscale.com/static/syslog/2018-11-08-what-is-ci/what-is-continuous-integration.png)
+> source exoscale.com
+
 ## Getting Started
 
 - Fork
@@ -528,6 +531,11 @@ npm test
 
 PASS!
 
+##
+
+![](https://docs.travis-ci.com/images/TravisCI-Full-Color.png)
+> source travis-ci.org
+
 ## Continuous Integration
 
 We will now setup Continuous Integration (CI). The idea is that anytime we push changes to GitHub, it will kickoff a build of our project on Travis CI with the latest changes. Travis CI will run our tests and either pass or fail the tests. Additionally, we will integrate [Coveralls](https://coveralls.io) to check test coverage on our codebase - the idea is that all new features we push up to GitHub should be paired with a Unit Test.
@@ -562,9 +570,7 @@ node_js:
   - 'stable'
 install: npm install
 services:
-  - postgresql
-before_script:
-  - npm run db:create:test
+  - mongodb
 script: npm test
 after_success: npm run coverage
 ```
@@ -597,14 +603,10 @@ Change your package.json:
 
 ```js
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest  --testTimeout=10000 --detectOpenHandles --forceExit",
-    "pretest": "cross-env NODE_ENV=test npm run db:reset",
-    "db:create:test": "cross-env NODE_ENV=test npx sequelize-cli db:create",
-    "db:drop:test": "cross-env NODE_ENV=test npx sequelize-cli db:drop",
-    "start": "node server.js",
+    "test": "jest tests --detectOpenHandles",
     "dev": "nodemon server.js",
-    "db:reset": "npx sequelize-cli db:drop && npx sequelize-cli db:create && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all",
-    "coverage": "npm run db:drop:test && npm run db:create:test && npm run pretest && jest --coverage && cat ./coverage/lcov.info | coveralls"
+    "start": "node server.js"
+    "coverage": "jest --coverage && cat ./coverage/lcov.info | coveralls"
   },
 ```
 
@@ -630,7 +632,8 @@ So we get all the tests to pass. Then what? Well that means the app is ready for
 
 1. `heroku create your-heroku-app-name`
 2. `heroku buildpacks:set heroku/nodejs`
-3. `heroku addons:create heroku-postgresql:hobby-dev --app=your-heroku-app-name`
+3. `heroku addons:add mongolab`
+> `heroku config:set PROD_MONGODB="<INSERT YOUR MONGODB URI CONNECTION STRING HERE>"`
 
 Now let's configure Travis CI to do the deployment upon our test successfully passing.
 
@@ -657,9 +660,7 @@ node_js:
 - stable
 install: npm install
 services:
-- postgresql
-before_script:
-- npm run db:create:test
+- mongodb
 script: npm test
 after_success: npm run coverage
 deploy:
@@ -670,8 +671,7 @@ deploy:
   on:
     repo: your-github-usernam/your-repo
   run:
-    - "npx sequelize-cli db:migrate"
-    - "npx sequelize-cli db:seed:all"
+    - "node seed/userProjects.js"
 ```
 
 ```sh
@@ -684,13 +684,11 @@ And watch the Travis build for:
 
 1. Successful tests.
 1. Successful Heroku deployment.
-1. Successful Sequelize migrations on Heroku.
-1. Successful Sequelize seeding on Heroku.
+1. Successful seeding of database.
 
 Once the build is complete, test the endpoints on Heroku to confirm: 
 
 - https://your-heroku-app-name.herokuapp.com/api/users
-- https://your-heroku-app-name.herokuapp.com/api/users/1
 
 **Excellent!**
 
