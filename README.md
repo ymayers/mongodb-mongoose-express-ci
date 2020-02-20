@@ -198,10 +198,198 @@ This a good time to edit our scripts:
   },
 ```
 
+Let's define our express routes:
+
+mongodb-mongoose-express-ci/routes/index.js
+```js
+const { Router } = require('express')
+const controllers = require('../controllers')
+const router = Router()
+
+router.get('/', (req, res) => res.send('This is root!'))
+
+router.post('/users', controllers.createUser)
+router.get('/users', controllers.getAllUsers)
+router.put('/users/:id', controllers.updateUser)
+router.delete('/users/:id', controllers.deleteUser)
+
+router.get('/users/:user_id/projects/:item_id', controllers.getProjectByUserId)
+router.get('/users/:user_id/projects', controllers.getProjectsFromUser)
+router.get('/users/:id/projects', controllers.getProjectsFromUser)
+router.post('/users/:user_id/projects', controllers.createProject)
+router.get('/projects/:id', controllers.getProject)
+router.put('/projects/:id', controllers.updateProject)
+router.delete('/projects/:id', controllers.deleteProject)
+
+module.exports = router
+```
+
+> Notice we are creating nested routes! A user can have project(s).
+
+Let's now create our controllers based on our nested routes.
+
+mongodb-mongoose-express-ci/controllers/index.js
+```js
+const db = require('../db')
+const User = require('../models/user')
+const Project = require('../models/project')
+
+db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+
+const createUser = async (req, res) => {
+    try {
+        const user = await new User(req.body)
+        await user.save()
+        return res.status(201).json(user)
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find()
+        return res.status(200).json(users)
+    } catch (error) {
+        return res.status(500).send(error.message)
+    }
+}
+
+const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await User.findByIdAndUpdate(id, req.body, { new: true }, (err, user) => {
+            if (err) {
+                res.status(500).send(err);
+            }
+            if (!user) {
+                res.status(500).send('User not found!');
+            }
+            return res.status(200).json(user);
+        })
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+}
+
+const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await User.findByIdAndDelete(id)
+        if (deleted) {
+            return res.status(200).send("User deleted");
+        }
+        throw new Error("User not found");
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+}
+
+const getProjectsFromUser = async (req, res) => {
+    try {
+        const { user_id } = req.params
+        const projects = await Project.find({ user_id: user_id })
+        if (projects) {
+            return res.status(200).json(projects)
+        }
+        return res.status(404).send('User with the specified ID does not exist')
+    } catch (error) {
+        return res.status(500).send(error.message)
+    }
+}
+
+const getProjectByUserId = async (req, res) => {
+    try {
+        const { user_id, project_id } = req.params
+        const project = await Project.findOne({ user_id: user_id, _id: project_id })
+        if (project) {
+            return res.status(200).json(project)
+        }
+        return res.status(404).send('Project with the specified ID does not exist')
+    } catch (error) {
+        return res.status(500).send(error.message)
+    }
+}
+
+const createProject = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.user_id)
+        const project = await new Project(req.body)
+        project.user_id = user._id
+        await project.save()
+        return res.status(201).json(project)
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+const getProject = async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id)
+        res.send(project)
+    } catch (error) {
+        return res.status(500).send(error.message)
+    }
+}
+
+const updateProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Project.findByIdAndUpdate(id, req.body, { new: true }, (err, project) => {
+            if (err) {
+                res.status(500).send(err);
+            }
+            if (!project) {
+                res.status(500).send('Project not found!');
+            }
+            return res.status(200).json(project)
+        })
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+}
+
+const deleteProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await Project.findByIdAndDelete(id)
+        if (deleted) {
+            return res.status(200).send("Project deleted");
+        }
+        throw new Error("Project not found");
+    } catch (error) {
+        return res.status(500).send(error.message);
+    }
+}
+
+module.exports = {
+    createUser,
+    getAllUsers,
+    getProject,
+    updateUser,
+    deleteUser,
+    getProjectsFromUser,
+    getProjectByUserId,
+    createProject,
+    updateProject,
+    deleteProject
+}
+```
+
+> Notice above how we implement the nested logic in our controllers
+
+Ok. Enough code. Let's run our server and test our endpoints.
+
+```sh
+npm run dev
+```
+
+Test all endpoints in your browser and using Postman.
+
+Good? Let's make sure it stays that way by writing some unit tests for our endpoints.
 
 Create your base test:
 
-tests/base.test.js
+mongodb-mongoose-express-ci/tests/base.test.js
 ```js
 describe('Initial Test', () => {
     it('should test that 1 + 1 === 2', () => {
@@ -212,65 +400,133 @@ describe('Initial Test', () => {
 
 And finally our routes tests:
 
-tests/routes.test.js
+mongodb-mongoose-express-ci/tests/routes.test.js
 ```js
 const request = require('supertest')
 const app = require('../app.js')
-describe('User API', () => {
-    it('should show all users', async () => {
+const mongoose = require('mongoose')
+const databaseName = 'projectsTestDatabase'
+const Project = require('../models/project')
+const User = require('../models/user')
+const faker = require('faker')
+
+beforeAll(async () => {
+    const MONGODB_URI = `mongodb://127.0.0.1/${databaseName}`
+    await mongoose.connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
+
+    const users = [...Array(25)].map(user => (
+        {
+            first_name: faker.name.firstName(),
+            last_name: faker.name.lastName(),
+            email: faker.internet.email()
+        }
+    ))
+    const createdUsers = await User.insertMany(users)
+    console.log('Created users!')
+    
+    const projects = [...Array(100)].map(item => {
+        const user = createdUsers[Math.floor(Math.random() * 25)]
+        return {
+            title: faker.lorem.sentence(),
+            image_url: faker.internet.url(),
+            description: faker.lorem.paragraph(),
+            github_url: faker.internet.url(),
+            deployed_url: faker.internet.url(),
+            user_id: user._id
+        }
+    })
+    await Project.insertMany(projects)
+    console.log('Created projects!')
+})
+
+let project, user
+
+describe('Projects API', () => {
+    it('should show all users', async done => {
         const res = await request(app).get('/api/users')
         expect(res.statusCode).toEqual(200)
-        expect(res.body).toHaveProperty('users')
+        user = res.body[0]
+        expect(res.body[0]).toHaveProperty('_id')
+        done()
     }),
-        it('should show a user', async () => {
-            const res = await request(app).get('/api/users/3')
-            expect(res.statusCode).toEqual(200)
-            expect(res.body).toHaveProperty('user')
-        }),
-        it('should create a new user', async () => {
-            const res = await request(app)
-                .post('/api/users')
-                .send({
-                    firstName: 'Bob',
-                    lastName: 'Doe',
-                    email: 'bob@doe.com',
-                    password: '12345678'
-                })
-            expect(res.statusCode).toEqual(201)
-            expect(res.body).toHaveProperty('user')
-        }),
-        it('should update a user', async () => {
-            const res = await request(app)
-                .put('/api/users/3')
-                .send({
-                    firstName: 'Bob',
-                    lastName: 'Smith',
-                    email: 'bob@doe.com',
-                    password: 'abc123'
-                })
-            expect(res.statusCode).toEqual(200)
-            expect(res.body).toHaveProperty('user')
-        }),
-        it('should delete a user', async () => {
-            const res = await request(app)
-                .del('/api/users/3')
-                .send({
-                    firstName: 'Bob',
-                    lastName: 'Smith',
-                    email: 'bob@doe.com',
-                    password: 'abc123'
-                })
-            expect(res.statusCode).toEqual(200)
-            expect(res.text).toEqual("User deleted")
-        })
+    it('should show all projects', async done => {
+        const res = await request(app).get(`/api/users/${user._id}/projects`)
+        expect(res.statusCode).toEqual(200)
+        expect(res.body[0]).toHaveProperty('_id')
+        done()
+    }),
+    it('should create a new project', async done => {
+        const res = await request(app)
+            .post(`/api/users/${user._id}/projects`)
+            .send({
+                title: 'Test Project',
+                image_url: 'http://www.testing.com',
+                description: 'http://www.testing.com',
+                github_url: 'http://www.testing.com',
+                deployed_url: 'http://www.testing.com',
+                user_id: user._id
+            })
+        expect(res.statusCode).toEqual(201)
+        expect(res.body).toHaveProperty('_id')
+        project = res.body._id
+        done()
+    }),
+    it('should show a project', async done => {
+        const res = await request(app).get(`/api/projects/${project}`)
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toHaveProperty('_id')
+        done()
+    }),
+    it('should update a project', async done => {
+        const res = await request(app)
+            .put(`/api/projects/${project}`)
+            .send({
+                title: 'Update Test Project',
+                image_url: 'http://www.testing.com',
+                description: 'http://www.testing.com',
+                github_url: 'http://www.testing.com',
+                deployed_url: 'http://www.testing.com',
+                user_id: user._id
+            })
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toHaveProperty('_id')
+        done()
+    }),
+    it('should delete a project', async done => {
+        const res = await request(app).del(`/api/projects/${project}`)
+        expect(res.statusCode).toEqual(200)
+        expect(res.text).toEqual("Project deleted")
+        done()
+    })
 })
+
+afterAll(async () => {
+    await mongoose.connection.db.dropDatabase()
+    await mongoose.connection.close()
+})
+```
+
+Let's edit our script file:
+
+mongodb-mongoose-express-ci/package.json
+```js
+  "scripts": {
+    "test": "jest tests --detectOpenHandles",
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
 ```
 
 Test it!
 
 ```sh
-npm run db:create:test && npm test
+npm test
 ```
+
+PASS!
 
 ## Continuous Integration
 
