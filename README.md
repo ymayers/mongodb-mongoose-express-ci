@@ -1,5 +1,10 @@
 # ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png)  SOFTWARE ENGINEERING IMMERSIVE
 
+## Getting Started
+
+- Fork
+- Clone
+
 # Express API - Continuous Integration
 
 What is Continuous Integration? Let's take 10min to read:
@@ -12,257 +17,155 @@ What is Continuous Integration? Let's take 10min to read:
 
 We are going to hit the ground running with this lesson. Up until this point you have created an express json api full crud (even a bit of unit testing). So let's skip the basics and dive right in!
 
-Make sure you're inside the GitHub.com repo you created:
-
-```sh
-git clone https://github.com/yourusername/express-api-ci
-cd express-api-ci
-```
-
 We will now create our directory structure (quickly).
 
 Copy this entire code snippet and paste it into your terminal and hit return:
 
 ```sh
+cd mongodb-mongoose-express-ci
 npm init -y && 
-npm install sequelize pg express body-parser morgan faker && 
-npm install --save-dev nodemon jest supertest cross-env sequelize-cli && 
-npx sequelize-cli init &&
+npm install mongoose express body-parser morgan cors faker && 
+npm install --save-dev nodemon jest supertest && 
 echo "
 /node_modules
 .DS_Store
 .env" >> .gitignore &&
-mkdir routes controllers tests &&
-touch server.js  routes/index.js controllers/index.js tests/{base.test.js,routes.test.js} &&
+mkdir db models seed routes controllers tests &&
+touch server.js app.js db/index.js models/{user,project}.js seed/userProjects.js routes/index.js controllers/index.js tests/{base,routes}.test.js &&
 code .
 ```
 
-Let's setup our database configuration:
+Let's create our database connection:
 
-express-api-ci/config/config.json
+mongodb-mongoose-express-ci/db/index.js
 ```js
-{
-  "development": {
-    "database": "express_api_ci_development",
-    "dialect": "postgres"
-  },
-  "test": {
-    "database": "express_api_ci_test",
-    "dialect": "postgres"
-  },
-  "production": {
-    "use_env_variable": "DATABASE_URL",
-    "dialect": "postgres",
-    "dialectOptions": {
-      "ssl": true
-    }
-  }
+const mongoose = require('mongoose')
+
+let MONGODB_URI = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/projectsDatabase'
+
+mongoose
+    .connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
+    .then(() => {
+        console.log('Successfully connected to MongoDB.')
+    })
+    .catch(e => {
+        console.error('Connection error', e.message)
+    })
+
+const db = mongoose.connection
+
+module.exports = db
+```
+
+Next let's create our user model:
+
+mongodb-mongoose-express-ci/models/user.js
+```js
+const mongoose = require('mongoose')
+const Schema = mongoose.Schema
+
+const User = new Schema(
+    {
+        first_name: { type: String, required: true },
+        last_name: { type: String, required: true },
+        email: { type: String, required: true }
+    },
+    { timestamps: true },
+)
+
+module.exports = mongoose.model('users', User)
+```
+
+And now we can create our project model:
+
+mongodb-mongoose-express-ci/models/project.js
+```js
+const mongoose = require('mongoose')
+const Schema = mongoose.Schema
+
+const Project = new Schema(
+    {
+        title: { type: String, required: true },
+        image_url: { type: String, required: true },
+        description: { type: String, required: true },
+        github_url: { type: String, required: true },
+        deployed_url: { type: String, required: true },
+        user_id: { type: Schema.Types.ObjectId, ref: 'user_id' }
+    },
+    { timestamps: true },
+)
+
+module.exports = mongoose.model('projects', Project)
+```
+
+Awesome, let's populate our database with some projects that belong to users:
+
+mongodb-mongoose-express-ci/seed/userProjects.js
+```js
+const db = require('../db')
+const Project = require('../models/project')
+const User = require('../models/user')
+const faker = require('faker')
+
+db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+
+const main = async () => {
+    const users = [...Array(25)].map(user => (
+        {
+            first_name: faker.name.firstName(),
+            last_name: faker.name.lastName(),
+            email: faker.internet.email()
+        }
+    ))
+    const createdUsers = await User.insertMany(users)
+    console.log('Created users!')
+    
+    const projects = [...Array(100)].map(item => {
+        const user = createdUsers[Math.floor(Math.random() * 25)]
+        return {
+            title: faker.lorem.sentence(),
+            image_url: faker.internet.url(),
+            description: faker.lorem.paragraph(),
+            github_url: faker.internet.url(),
+            deployed_url: faker.internet.url(),
+            user_id: user._id
+        }
+    })
+    await Project.insertMany(projects)
+    console.log('Created projects!')
 }
-```
 
-> Notice: For production we use `use_env_variable` and `DATABASE_URL`. We are going to deploy this app to [Heroku](https://www.heroku.com). Heroku is smart enough to replace `DATABASE_URL` with the production database. You will see this at the end of the lesson.
 
-Create your database, a User model, and run the migration:
 
-```sh
-npx sequelize-cli db:create
-npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string,userName:string,password:string,jobTitle:string
-npx sequelize-cli db:migrate
-```
+const run = async () => {
+    await main()
+    db.close()
+}
 
-Create the seed:
-
-```sh
-npx sequelize-cli seed:generate --name users
-```
-
-Edit the seed file:
-
-```js
-const faker = require('faker');
-
-const users = [...Array(50)].map((user) => (
-  {
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-    email: faker.internet.email(),
-    userName: faker.internet.userName(),
-    password: faker.internet.password(8),
-    jobTitle: faker.name.jobTitle(),
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-))
-
-module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.bulkInsert('Users', users, {});
-  },
-
-  down: (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Users', null, {});
-  }
-};
+run()
 ```
 
 Execute the seed file:
 
 ```sh
-npx sequelize-cli db:seed:all
+node seed/userProjects.js
 ```
 
-Create the Project model:
+Check in MongoDB Compass that the database was created with the correct data.
 
-```sh
-npx sequelize-cli model:generate --name Project --attributes title:string,imageUrl:string,description:text,githubUrl:string,deployedUrl:string,userId:integer
-```
+C00L. Data is good. Let's move on to create our express app.
 
-project.js
-```js
-module.exports = (sequelize, DataTypes) => {
-  const Project = sequelize.define('Project', {
-    title: DataTypes.STRING,
-    imageUrl: DataTypes.STRING,
-    description: DataTypes.STRING,
-    githubUrl: DataTypes.STRING,
-    deployedUrl: DataTypes.STRING,
-    userId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'User',
-        key: 'id',
-        as: 'userId',
-      }
-    }
-  }, {});
-  Project.associate = function (models) {
-    // associations can be defined here
-    Project.belongsTo(models.User, {
-      foreignKey: 'userId',
-      onDelete: 'CASCADE'
-    })
-  };
-  return Project;
-};
-```
-
-user.js
-```js
-module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define('User', {
-    firstName: DataTypes.STRING,
-    lastName: DataTypes.STRING,
-    email: DataTypes.STRING
-  }, {});
-  User.associate = function(models) {
-    // associations can be defined here
-    User.hasMany(models.Project, {
-      foreignKey: 'userId'
-    })
-  };
-  return User;
-};
-```
-
-Run the migrations:
-
-```js
-npx sequelize-cli db:migrate
-```
-
-Let's create a seed for projects:
-
-```sh
-npx sequelize-cli seed:generate --name projects
-```
-
-We will be using the faker package:
-
-seeders/20190915023333-projects.js
-```js
-const faker = require('faker');
-
-const projects = [...Array(500)].map((project) => (
-  {
-    title: faker.commerce.productName(),
-    imageUrl: faker.image.business(),
-    description: faker.lorem.paragraph(),
-    githubUrl: faker.internet.url(),
-    deployedUrl: faker.internet.url(),
-    userId: Math.floor(Math.random() * 100) + 1,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-))
-
-module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.bulkInsert('Projects', projects, {});
-  },
-
-  down: (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Projects', null, {});
-  }
-};
-```
-
-Run the seed file, replace the timestamp below with your timestamp:
-
-```sh
-npx sequelize-cli db:seed --seed 20190915023333-projects.js
-```
-
-Make sure the data came through on [Postico](https://eggerapps.at/postico).
-
-Modify your package.json:
-
-```js
-  "scripts": {
-    "test": "cross-env NODE_ENV=test jest --testTimeout=10000",
-    "pretest": "cross-env NODE_ENV=test npm run db:reset",
-    "db:create:test": "cross-env NODE_ENV=test npx sequelize-cli db:create",
-    "start": "nodemon server.js",
-    "db:reset": "npx sequelize-cli db:drop && npx sequelize-cli db:create && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
-  }
-```
-
-Create your routes:
-
-routes/index.js
-```js
-const { Router } = require('express');
-const controllers = require('../controllers')
-const router = Router();
-
-router.get('/', (req, res) => res.send('This is root!'))
-
-router.post('/users', controllers.createUser)
-router.get('/users', controllers.getAllUsers)
-router.get('/users/:id', controllers.getUserById)
-router.put('/users/:id', controllers.updateUser)
-router.delete('/users/:id', controllers.deleteUser)
-
-module.exports = router;
-```
-
-We will be creating an app.js which will hold our backend application logic and a server.js file which will create an instantiation of our backend application.
-
-First let's create app.js
-
+mongodb-mongoose-express-ci/app.js
 ```js
 const express = require('express');
+const cors = require('cors')
 const bodyParser = require('body-parser');
 const logger = require('morgan');
 const routes = require('./routes');
 
 const app = express();
 
+app.use(cors())
 app.use(bodyParser.json())
 app.use(logger('dev'))
 
@@ -271,113 +174,30 @@ app.use('/api', routes);
 module.exports = app
 ```
 
-Next let's create server.js
+And the code to instantiate our express app:
 
+mongodb-mongoose-express-ci/server.js
 ```js
-const app = require('./app.js');
+const app = require('./app.js')
+const db = require('./db')
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000
+
+db.on('error', console.error.bind(console, 'MongoDB connection error:'))
 
 app.listen(PORT, () => console.log(`Listening on port: ${PORT}`))
 ```
 
-Create the controllers:
+This a good time to edit our scripts:
 
-controllers/index.js
 ```js
-const { User, Project } = require('../models');
-
-const createUser = async (req, res) => {
-    try {
-        const user = await User.create(req.body);
-        return res.status(201).json({
-            user,
-        });
-    } catch (error) {
-        return res.status(500).json({ error: error.message })
-    }
-}
-
-const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.findAll({
-            include: [
-                {
-                    model: Project
-                }
-            ]
-        });
-        return res.status(200).json({ users });
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-}
-
-const getUserById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await User.findOne({
-            where: { id: id },
-            include: [
-                {
-                    model: Project
-                }
-            ]
-        });
-        if (user) {
-            return res.status(200).json({ user });
-        }
-        return res.status(404).send('User with the specified ID does not exists');
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-}
-
-const updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const [updated] = await User.update(req.body, {
-            where: { id: id }
-        });
-        if (updated) {
-            const updatedUser = await User.findOne({ where: { id: id } });
-            return res.status(200).json({ user: updatedUser });
-        }
-        throw new Error('User not found');
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-};
-
-const deleteUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await User.destroy({
-            where: { id: id }
-        });
-        if (deleted) {
-            return res.status(200).send("User deleted");
-        }
-        throw new Error("User not found");
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-};
-
-module.exports = {
-    createUser,
-    getAllUsers,
-    getUserById,
-    updateUser,
-    deleteUser
-}
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
 ```
 
-Run the server:
-
-```sh
-npm start
-```
 
 Create your base test:
 
