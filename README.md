@@ -44,7 +44,7 @@ mongodb-mongoose-express-ci/db/index.js
 ```js
 const mongoose = require('mongoose')
 
-let MONGODB_URI = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/projectsDatabase'
+let MONGODB_URI = process.env.PROD_MONGODB || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/projectsDatabase'
 
 mongoose
     .connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
