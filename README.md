@@ -636,7 +636,6 @@ So we get all the tests to pass. Then what? Well that means the app is ready for
 1. `heroku create your-heroku-app-name`
 2. `heroku buildpacks:set heroku/nodejs`
 3. `heroku addons:add mongolab`
-> `heroku config:set PROD_MONGODB="<INSERT YOUR MONGODB URI CONNECTION STRING HERE>"`
 
 Now let's configure Travis CI to do the deployment upon our test successfully passing.
 
@@ -669,13 +668,14 @@ after_success: npm run coverage
 deploy:
   provider: heroku
   api_key:
-    secure: your-heroku-encrypted-api-key
-  app: your-heroku-app-name
+    secure: qqjxxT2AJrIjz2WtFGQnBrR0s/dXyVmKGgWQWvdDir9pN/GokJpcaL/tYdS0F2GKO2W9KM8TxylJIhXkU3xkKgE07y1k2mwsSXEglPcmZ4rhWhKe4/wBSVYJsXnagV5teAIhUC7Nqz28fttOLCpL+TMtWXkaZ43hS+GCQlNziqLcVamVC4hnwR/EnCSbPh2c1wogWdkZaXy0xUsRmYt0KUETCZr6kQBOVXrtdNtYB5W8XWKJXEJQ7k9LfwuE/bZ/mwO+qO238kUA/STIvSdIlmV1WLmlkfk01yvQEOmK2qvhZ5JsTGEE/82BuYgYtXNQWroHp1ExJA0iT62u7t/XVGgtvcLsUDX7q8/l35JPmkxpU5Z8Ne0UjFQfmHfo0PI8WtYUVYDnZ3BT+E+xuezqS/rCt0zEDjZvEhJSDwRPxDZcwK2+MSDxpQ93dnuCH7ImRAbIW8QAvlfneNmv0bWnEvtnGQkdjZwB1EcfYEslDVFgzETT5HZspwrU5Rb3j3S0n6empW312yi9itygzuC7Q3QgHmKiicl1oSu+RtMpzJHW781Db+yT4KHvlI9pSd5NgF0yMemfT1er7GddCWTnnh4t3d3r3NuP+Onan0zWMkFg16IGPvbqrRnOSf5c/UrpYhTnLx0z9rZ0ZWh6tIDB8JEDrBxPXNvrvRQAe0wU0WA=
+  app: mongo-0004
   on:
-    repo: your-github-usernam/your-repo
+    repo: brunopgalvao/mongodb-mongoose-express-ci-01
   run:
     - "node seed/userProjects.js"
 ```
+> Don't forget the last command to seed the database.
 
 ```sh
 git status
