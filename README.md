@@ -22,10 +22,13 @@ We are going to hit the ground running with this lesson. Up until this point you
 
 We will now create our directory structure (quickly).
 
+```sh
+cd mongodb-mongoose-express-ci
+```
+
 Copy this entire code snippet and paste it into your terminal and hit return:
 
 ```sh
-cd mongodb-mongoose-express-ci
 npm init -y && 
 npm install mongoose express body-parser morgan cors faker && 
 npm install --save-dev nodemon jest supertest && 
