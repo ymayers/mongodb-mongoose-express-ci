@@ -606,10 +606,10 @@ Change your package.json:
 
 ```js
   "scripts": {
-    "test": "jest tests --detectOpenHandles",
+    "test": "jest tests --detectOpenHandles --forceExit --testTimeout=10000 ",
     "dev": "nodemon server.js",
-    "start": "node server.js"
-    "coverage": "jest --coverage && cat ./coverage/lcov.info | coveralls"
+    "start": "node server.js",
+    "coverage": "jest --coverage --detectOpenHandles --forceExit && cat ./coverage/lcov.info | coveralls"
   },
 ```
 
