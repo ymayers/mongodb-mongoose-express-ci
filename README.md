@@ -627,7 +627,7 @@ You will also see your Coveralls badge in your README.md updated.
 
 ##
 
-### Bonus: Adding Deployment to the Travis CI Build
+### Adding Deployment to the Travis CI Build
 
 So we get all the tests to pass. Then what? Well that means the app is ready for production - its ready to deploy. Let's have Travis CI kickoff a Heroku deployment if all tests pass.
 
