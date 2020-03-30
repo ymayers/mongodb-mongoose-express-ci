@@ -47,7 +47,7 @@ mongodb-mongoose-express-ci/db/index.js
 ```js
 const mongoose = require('mongoose')
 
-let MONGODB_URI = process.env.PROD_MONGODB || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/projectsDatabase'
+let MONGODB_URI = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/projectsDatabase'
 
 mongoose
     .connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
@@ -627,17 +627,102 @@ You will also see your Coveralls badge in your README.md updated.
 
 ##
 
-### Adding Deployment to the Travis CI Build
+## Setting Up MongoDB Cloud Atlas Database
 
-So we get all the tests to pass. Then what? Well that means the app is ready for production - its ready to deploy. Let's have Travis CI kickoff a Heroku deployment if all tests pass.
+First step is to signup to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) here: https://www.mongodb.com/cloud/atlas
+
+> Then click the green button "Build a Cluster"
+
+<p align="center">
+  <img src="https://i.imgur.com/KcgbFXc.png" width="80%"/>
+</p>
+
+##
+
+> Select the **free** tier
+
+<p align="center">
+  <img src="https://i.imgur.com/vAgMBoM.png" width="60%"/>
+</p>
+
+##
+
+> Select AWS, the N. Virginia free tier, and click the green "Create Cluster" button
+
+<p align="center">
+  <img src="https://i.imgur.com/ylkZwtl.png" width="60%"/>
+</p>
+
+##
+
+> Grab a cup of coffee ☕ it will take a few minutes for MongoDB Atlas to create your databases in the cloud
+
+<p align="center">
+  <img src="https://i.imgur.com/yVn9eLy.png" width="80%"/>
+</p>
+
+##
+
+> Click the "CONNECT" button
+
+<p align="center">
+  <img src="https://i.imgur.com/OfroaVP.png" width="80%"/>
+</p>
+
+##
+
+> You should see a modal pop up. Click "Add a Different IP Address" button
+
+> Then enter 0.0.0.0/0 for the IP Address input (this will allow all IP Addresses to access the database)
+
+> Click the green "Add IP Address" button
+
+> Now let's secure the database. Create a username/password (remember the password, you will need it later)
+
+> Click the "Create MongoDB User" button
+
+> Next, click the "Choose a connection method" button in the lower right of the modal
+
+<p align="center">
+  <img src="https://i.imgur.com/hv860VE.png" width="60%"/>
+</p>
+
+##
+
+> Click "Connect Your Application"
+
+<p align="center">
+  <img src="https://i.imgur.com/40KJqQt.png" width="60%"/>
+</p>
+
+##
+
+> Select the "Connection String Only" tab
+
+> Copy the connection string
+
+<p align="center">
+  <img src="https://i.imgur.com/vZnBMKN.png" width="60%"/>
+</p>
+
+##
+
+Let's deploy our app to [heroku](https://devcenter.heroku.com/articles/heroku-cli#download-and-install).
+
+Now we're ready to deploy to Heroku and specify our MongoDB Atlas URI connection string to tell Heroku where our database lives.
 
 > Make sure you're on the `master` branch!
 
 1. `heroku create your-heroku-app-name`
 2. `heroku buildpacks:set heroku/nodejs`
-3. `heroku addons:add mongolab`
+3. `heroku config:set PROD_MONGODB="<INSERT YOUR MONGODB URI CONNECTION STRING HERE>"`
+    - replace the word test in your connection string with the name of your a database: projectsDatabase
 
-Now let's configure Travis CI to do the deployment upon our test successfully passing.
+### Adding Deployment to the Travis CI Build
+
+So we get all the tests to pass. Then what? Well that means the app is ready for production - its ready to deploy. Let's have Travis CI kickoff a Heroku deployment if all tests pass.
+
+So let's configure Travis CI to do the deployment upon our tests successfully passing.
 
 First, we have to install the [Travis CI CLI](https://github.com/travis-ci/travis.rb#readme) tool:
 
@@ -652,7 +737,6 @@ travis setup heroku
 ```
 
 > Make sure you encrypt your heroku api key! More info on running heroku commands on travis [here](https://docs.travis-ci.com/user/deployment/heroku/#running-commands)
-
 
 Ok, our .travis.yml file should now look something like this:
 
