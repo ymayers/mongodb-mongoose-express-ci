@@ -8,6 +8,13 @@
 - Fork
 - Clone
 
+## Learning Objectives
+
+By the end of this, developers should be able to:
+
+- Understand where Continuous Integration fits in the software development lifecycle
+- Build a CI workflow using third-party tools
+
 # Express API - Continuous Integration
 
 What is Continuous Integration? Let's take 10min to read:
