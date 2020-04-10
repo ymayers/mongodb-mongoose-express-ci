@@ -1,6 +1,9 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png)  SOFTWARE ENGINEERING IMMERSIVE
+[![Coverage Status](https://coveralls.io/repos/github/ymayers/mongodb-mongoose-express-ci/badge.svg?branch=master)](https://coveralls.io/github/ymayers/mongodb-mongoose-express-ci?branch=master)
+
+# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) SOFTWARE ENGINEERING IMMERSIVE
 
 ![](https://www.exoscale.com/static/syslog/2018-11-08-what-is-ci/what-is-continuous-integration.png)
+
 > source exoscale.com
 
 ## Getting Started
@@ -36,9 +39,9 @@ cd mongodb-mongoose-express-ci
 Copy this entire code snippet and paste it into your terminal and hit return:
 
 ```sh
-npm init -y && 
-npm install mongoose express body-parser morgan cors faker && 
-npm install --save-dev nodemon jest supertest && 
+npm init -y &&
+npm install mongoose express body-parser morgan cors faker &&
+npm install --save-dev nodemon jest supertest &&
 echo "
 /node_modules
 .DS_Store
@@ -51,111 +54,112 @@ code .
 Let's create our database connection:
 
 mongodb-mongoose-express-ci/db/index.js
-```js
-const mongoose = require('mongoose')
 
-let MONGODB_URI = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/projectsDatabase'
+```js
+const mongoose = require("mongoose");
+
+let MONGODB_URI =
+  process.env.PROD_MONGODB || "mongodb://127.0.0.1:27017/projectsDatabase";
 
 mongoose
-    .connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
-    .then(() => {
-        console.log('Successfully connected to MongoDB.')
-    })
-    .catch(e => {
-        console.error('Connection error', e.message)
-    })
+  .connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
+  .then(() => {
+    console.log("Successfully connected to MongoDB.");
+  })
+  .catch(e => {
+    console.error("Connection error", e.message);
+  });
 
-const db = mongoose.connection
+const db = mongoose.connection;
 
-module.exports = db
+module.exports = db;
 ```
 
 Next let's create our user model:
 
 mongodb-mongoose-express-ci/models/user.js
+
 ```js
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 const User = new Schema(
-    {
-        first_name: { type: String, required: true },
-        last_name: { type: String, required: true },
-        email: { type: String, required: true }
-    },
-    { timestamps: true },
-)
+  {
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
+    email: { type: String, required: true }
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('users', User)
+module.exports = mongoose.model("users", User);
 ```
 
 And now we can create our project model:
 
 mongodb-mongoose-express-ci/models/project.js
+
 ```js
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 const Project = new Schema(
-    {
-        title: { type: String, required: true },
-        image_url: { type: String, required: true },
-        description: { type: String, required: true },
-        github_url: { type: String, required: true },
-        deployed_url: { type: String, required: true },
-        user_id: { type: Schema.Types.ObjectId, ref: 'user_id' }
-    },
-    { timestamps: true },
-)
+  {
+    title: { type: String, required: true },
+    image_url: { type: String, required: true },
+    description: { type: String, required: true },
+    github_url: { type: String, required: true },
+    deployed_url: { type: String, required: true },
+    user_id: { type: Schema.Types.ObjectId, ref: "user_id" }
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('projects', Project)
+module.exports = mongoose.model("projects", Project);
 ```
 
 Awesome, let's populate our database with some projects that belong to users:
 
 mongodb-mongoose-express-ci/seed/userProjects.js
-```js
-const db = require('../db')
-const Project = require('../models/project')
-const User = require('../models/user')
-const faker = require('faker')
 
-db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+```js
+const db = require("../db");
+const Project = require("../models/project");
+const User = require("../models/user");
+const faker = require("faker");
+
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 const main = async () => {
-    const users = [...Array(25)].map(user => (
-        {
-            first_name: faker.name.firstName(),
-            last_name: faker.name.lastName(),
-            email: faker.internet.email()
-        }
-    ))
-    const createdUsers = await User.insertMany(users)
-    console.log('Created users!')
-    
-    const projects = [...Array(100)].map(item => {
-        const user = createdUsers[Math.floor(Math.random() * 25)]
-        return {
-            title: faker.lorem.sentence(),
-            image_url: faker.internet.url(),
-            description: faker.lorem.paragraph(),
-            github_url: faker.internet.url(),
-            deployed_url: faker.internet.url(),
-            user_id: user._id
-        }
-    })
-    await Project.insertMany(projects)
-    console.log('Created projects!')
-}
+  const users = [...Array(25)].map(user => ({
+    first_name: faker.name.firstName(),
+    last_name: faker.name.lastName(),
+    email: faker.internet.email()
+  }));
+  const createdUsers = await User.insertMany(users);
+  console.log("Created users!");
 
-
+  const projects = [...Array(100)].map(item => {
+    const user = createdUsers[Math.floor(Math.random() * 25)];
+    return {
+      title: faker.lorem.sentence(),
+      image_url: faker.internet.url(),
+      description: faker.lorem.paragraph(),
+      github_url: faker.internet.url(),
+      deployed_url: faker.internet.url(),
+      user_id: user._id
+    };
+  });
+  await Project.insertMany(projects);
+  console.log("Created projects!");
+};
 
 const run = async () => {
-    await main()
-    db.close()
-}
+  await main();
+  db.close();
+};
 
-run()
+run();
 ```
 
 Execute the seed file:
@@ -169,36 +173,38 @@ Check in MongoDB Compass that the database was created with the correct data.
 C00L. Data is good. Let's move on to create our express app.
 
 mongodb-mongoose-express-ci/app.js
+
 ```js
-const express = require('express');
-const cors = require('cors')
-const bodyParser = require('body-parser');
-const logger = require('morgan');
-const routes = require('./routes');
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const logger = require("morgan");
+const routes = require("./routes");
 
 const app = express();
 
-app.use(cors())
-app.use(bodyParser.json())
-app.use(logger('dev'))
+app.use(cors());
+app.use(bodyParser.json());
+app.use(logger("dev"));
 
-app.use('/api', routes);
+app.use("/api", routes);
 
-module.exports = app
+module.exports = app;
 ```
 
 And the code to instantiate our express app:
 
 mongodb-mongoose-express-ci/server.js
+
 ```js
-const app = require('./app.js')
-const db = require('./db')
+const app = require("./app.js");
+const db = require("./db");
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 
-db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-app.listen(PORT, () => console.log(`Listening on port: ${PORT}`))
+app.listen(PORT, () => console.log(`Listening on port: ${PORT}`));
 ```
 
 This a good time to edit our scripts:
@@ -214,27 +220,28 @@ This a good time to edit our scripts:
 Let's define our express routes:
 
 mongodb-mongoose-express-ci/routes/index.js
+
 ```js
-const { Router } = require('express')
-const controllers = require('../controllers')
-const router = Router()
+const { Router } = require("express");
+const controllers = require("../controllers");
+const router = Router();
 
-router.get('/', (req, res) => res.send('This is root!'))
+router.get("/", (req, res) => res.send("This is root!"));
 
-router.post('/users', controllers.createUser)
-router.get('/users', controllers.getAllUsers)
-router.put('/users/:id', controllers.updateUser)
-router.delete('/users/:id', controllers.deleteUser)
+router.post("/users", controllers.createUser);
+router.get("/users", controllers.getAllUsers);
+router.put("/users/:id", controllers.updateUser);
+router.delete("/users/:id", controllers.deleteUser);
 
-router.get('/users/:user_id/projects/:item_id', controllers.getProjectByUserId)
-router.get('/users/:user_id/projects', controllers.getProjectsFromUser)
-router.get('/users/:id/projects', controllers.getProjectsFromUser)
-router.post('/users/:user_id/projects', controllers.createProject)
-router.get('/projects/:id', controllers.getProject)
-router.put('/projects/:id', controllers.updateProject)
-router.delete('/projects/:id', controllers.deleteProject)
+router.get("/users/:user_id/projects/:item_id", controllers.getProjectByUserId);
+router.get("/users/:user_id/projects", controllers.getProjectsFromUser);
+router.get("/users/:id/projects", controllers.getProjectsFromUser);
+router.post("/users/:user_id/projects", controllers.createProject);
+router.get("/projects/:id", controllers.getProject);
+router.put("/projects/:id", controllers.updateProject);
+router.delete("/projects/:id", controllers.deleteProject);
 
-module.exports = router
+module.exports = router;
 ```
 
 > Notice we are creating nested routes! A user can have project(s).
@@ -242,150 +249,159 @@ module.exports = router
 Let's now create our controllers based on our nested routes.
 
 mongodb-mongoose-express-ci/controllers/index.js
-```js
-const db = require('../db')
-const User = require('../models/user')
-const Project = require('../models/project')
 
-db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+```js
+const db = require("../db");
+const User = require("../models/user");
+const Project = require("../models/project");
+
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 const createUser = async (req, res) => {
-    try {
-        const user = await new User(req.body)
-        await user.save()
-        return res.status(201).json(user)
-    } catch (error) {
-        return res.status(500).json({ error: error.message })
-    }
-}
+  try {
+    const user = await new User(req.body);
+    await user.save();
+    return res.status(201).json(user);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.find()
-        return res.status(200).json(users)
-    } catch (error) {
-        return res.status(500).send(error.message)
-    }
-}
+  try {
+    const users = await User.find();
+    return res.status(200).json(users);
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await User.findByIdAndUpdate(id, req.body, { new: true }, (err, user) => {
-            if (err) {
-                res.status(500).send(err);
-            }
-            if (!user) {
-                res.status(500).send('User not found!');
-            }
-            return res.status(200).json(user);
-        })
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-}
+  try {
+    const { id } = req.params;
+    await User.findByIdAndUpdate(id, req.body, { new: true }, (err, user) => {
+      if (err) {
+        res.status(500).send(err);
+      }
+      if (!user) {
+        res.status(500).send("User not found!");
+      }
+      return res.status(200).json(user);
+    });
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const deleteUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await User.findByIdAndDelete(id)
-        if (deleted) {
-            return res.status(200).send("User deleted");
-        }
-        throw new Error("User not found");
-    } catch (error) {
-        return res.status(500).send(error.message);
+  try {
+    const { id } = req.params;
+    const deleted = await User.findByIdAndDelete(id);
+    if (deleted) {
+      return res.status(200).send("User deleted");
     }
-}
+    throw new Error("User not found");
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const getProjectsFromUser = async (req, res) => {
-    try {
-        const { user_id } = req.params
-        const projects = await Project.find({ user_id: user_id })
-        if (projects) {
-            return res.status(200).json(projects)
-        }
-        return res.status(404).send('User with the specified ID does not exist')
-    } catch (error) {
-        return res.status(500).send(error.message)
+  try {
+    const { user_id } = req.params;
+    const projects = await Project.find({ user_id: user_id });
+    if (projects) {
+      return res.status(200).json(projects);
     }
-}
+    return res.status(404).send("User with the specified ID does not exist");
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const getProjectByUserId = async (req, res) => {
-    try {
-        const { user_id, project_id } = req.params
-        const project = await Project.findOne({ user_id: user_id, _id: project_id })
-        if (project) {
-            return res.status(200).json(project)
-        }
-        return res.status(404).send('Project with the specified ID does not exist')
-    } catch (error) {
-        return res.status(500).send(error.message)
+  try {
+    const { user_id, project_id } = req.params;
+    const project = await Project.findOne({
+      user_id: user_id,
+      _id: project_id
+    });
+    if (project) {
+      return res.status(200).json(project);
     }
-}
+    return res.status(404).send("Project with the specified ID does not exist");
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const createProject = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.user_id)
-        const project = await new Project(req.body)
-        project.user_id = user._id
-        await project.save()
-        return res.status(201).json(project)
-    } catch (error) {
-        return res.status(500).json({ error: error.message })
-    }
-}
+  try {
+    const user = await User.findById(req.params.user_id);
+    const project = await new Project(req.body);
+    project.user_id = user._id;
+    await project.save();
+    return res.status(201).json(project);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 const getProject = async (req, res) => {
-    try {
-        const project = await Project.findById(req.params.id)
-        res.send(project)
-    } catch (error) {
-        return res.status(500).send(error.message)
-    }
-}
+  try {
+    const project = await Project.findById(req.params.id);
+    res.send(project);
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const updateProject = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await Project.findByIdAndUpdate(id, req.body, { new: true }, (err, project) => {
-            if (err) {
-                res.status(500).send(err);
-            }
-            if (!project) {
-                res.status(500).send('Project not found!');
-            }
-            return res.status(200).json(project)
-        })
-    } catch (error) {
-        return res.status(500).send(error.message);
-    }
-}
+  try {
+    const { id } = req.params;
+    await Project.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true },
+      (err, project) => {
+        if (err) {
+          res.status(500).send(err);
+        }
+        if (!project) {
+          res.status(500).send("Project not found!");
+        }
+        return res.status(200).json(project);
+      }
+    );
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 const deleteProject = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await Project.findByIdAndDelete(id)
-        if (deleted) {
-            return res.status(200).send("Project deleted");
-        }
-        throw new Error("Project not found");
-    } catch (error) {
-        return res.status(500).send(error.message);
+  try {
+    const { id } = req.params;
+    const deleted = await Project.findByIdAndDelete(id);
+    if (deleted) {
+      return res.status(200).send("Project deleted");
     }
-}
+    throw new Error("Project not found");
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+};
 
 module.exports = {
-    createUser,
-    getAllUsers,
-    getProject,
-    updateUser,
-    deleteUser,
-    getProjectsFromUser,
-    getProjectByUserId,
-    createProject,
-    updateProject,
-    deleteProject
-}
+  createUser,
+  getAllUsers,
+  getProject,
+  updateUser,
+  deleteUser,
+  getProjectsFromUser,
+  getProjectByUserId,
+  createProject,
+  updateProject,
+  deleteProject
+};
 ```
 
 > Notice above how we implement the nested logic in our controllers
@@ -403,125 +419,129 @@ Good? Let's make sure it stays that way by writing some unit tests for our endpo
 Create your base test:
 
 mongodb-mongoose-express-ci/tests/base.test.js
+
 ```js
-describe('Initial Test', () => {
-    it('should test that 1 + 1 === 2', () => {
-        expect(1 + 1).toBe(2)
-    })
-})
+describe("Initial Test", () => {
+  it("should test that 1 + 1 === 2", () => {
+    expect(1 + 1).toBe(2);
+  });
+});
 ```
 
 And finally our routes tests:
 
 mongodb-mongoose-express-ci/tests/routes.test.js
+
 ```js
-const request = require('supertest')
-const app = require('../app.js')
-const mongoose = require('mongoose')
-const databaseName = 'projectsTestDatabase'
-const Project = require('../models/project')
-const User = require('../models/user')
-const faker = require('faker')
+const request = require("supertest");
+const app = require("../app.js");
+const mongoose = require("mongoose");
+const databaseName = "projectsTestDatabase";
+const Project = require("../models/project");
+const User = require("../models/user");
+const faker = require("faker");
 
 beforeAll(async () => {
-    const MONGODB_URI = `mongodb://127.0.0.1/${databaseName}`
-    await mongoose.connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
+  const MONGODB_URI = `mongodb://127.0.0.1/${databaseName}`;
+  await mongoose.connect(MONGODB_URI, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true
+  });
 
-    const users = [...Array(25)].map(user => (
-        {
-            first_name: faker.name.firstName(),
-            last_name: faker.name.lastName(),
-            email: faker.internet.email()
-        }
-    ))
-    const createdUsers = await User.insertMany(users)
-    console.log('Created users!')
-    
-    const projects = [...Array(100)].map(item => {
-        const user = createdUsers[Math.floor(Math.random() * 25)]
-        return {
-            title: faker.lorem.sentence(),
-            image_url: faker.internet.url(),
-            description: faker.lorem.paragraph(),
-            github_url: faker.internet.url(),
-            deployed_url: faker.internet.url(),
-            user_id: user._id
-        }
-    })
-    await Project.insertMany(projects)
-    console.log('Created projects!')
-})
+  const users = [...Array(25)].map(user => ({
+    first_name: faker.name.firstName(),
+    last_name: faker.name.lastName(),
+    email: faker.internet.email()
+  }));
+  const createdUsers = await User.insertMany(users);
+  console.log("Created users!");
 
-let project, user
+  const projects = [...Array(100)].map(item => {
+    const user = createdUsers[Math.floor(Math.random() * 25)];
+    return {
+      title: faker.lorem.sentence(),
+      image_url: faker.internet.url(),
+      description: faker.lorem.paragraph(),
+      github_url: faker.internet.url(),
+      deployed_url: faker.internet.url(),
+      user_id: user._id
+    };
+  });
+  await Project.insertMany(projects);
+  console.log("Created projects!");
+});
 
-describe('Projects API', () => {
-    it('should show all users', async done => {
-        const res = await request(app).get('/api/users')
-        expect(res.statusCode).toEqual(200)
-        user = res.body[0]
-        expect(res.body[0]).toHaveProperty('_id')
-        done()
+let project, user;
+
+describe("Projects API", () => {
+  it("should show all users", async done => {
+    const res = await request(app).get("/api/users");
+    expect(res.statusCode).toEqual(200);
+    user = res.body[0];
+    expect(res.body[0]).toHaveProperty("_id");
+    done();
+  }),
+    it("should show all projects", async done => {
+      const res = await request(app).get(`/api/users/${user._id}/projects`);
+      expect(res.statusCode).toEqual(200);
+      expect(res.body[0]).toHaveProperty("_id");
+      done();
     }),
-    it('should show all projects', async done => {
-        const res = await request(app).get(`/api/users/${user._id}/projects`)
-        expect(res.statusCode).toEqual(200)
-        expect(res.body[0]).toHaveProperty('_id')
-        done()
+    it("should create a new project", async done => {
+      const res = await request(app)
+        .post(`/api/users/${user._id}/projects`)
+        .send({
+          title: "Test Project",
+          image_url: "http://www.testing.com",
+          description: "http://www.testing.com",
+          github_url: "http://www.testing.com",
+          deployed_url: "http://www.testing.com",
+          user_id: user._id
+        });
+      expect(res.statusCode).toEqual(201);
+      expect(res.body).toHaveProperty("_id");
+      project = res.body._id;
+      done();
     }),
-    it('should create a new project', async done => {
-        const res = await request(app)
-            .post(`/api/users/${user._id}/projects`)
-            .send({
-                title: 'Test Project',
-                image_url: 'http://www.testing.com',
-                description: 'http://www.testing.com',
-                github_url: 'http://www.testing.com',
-                deployed_url: 'http://www.testing.com',
-                user_id: user._id
-            })
-        expect(res.statusCode).toEqual(201)
-        expect(res.body).toHaveProperty('_id')
-        project = res.body._id
-        done()
+    it("should show a project", async done => {
+      const res = await request(app).get(`/api/projects/${project}`);
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty("_id");
+      done();
     }),
-    it('should show a project', async done => {
-        const res = await request(app).get(`/api/projects/${project}`)
-        expect(res.statusCode).toEqual(200)
-        expect(res.body).toHaveProperty('_id')
-        done()
+    it("should update a project", async done => {
+      const res = await request(app)
+        .put(`/api/projects/${project}`)
+        .send({
+          title: "Update Test Project",
+          image_url: "http://www.testing.com",
+          description: "http://www.testing.com",
+          github_url: "http://www.testing.com",
+          deployed_url: "http://www.testing.com",
+          user_id: user._id
+        });
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty("_id");
+      done();
     }),
-    it('should update a project', async done => {
-        const res = await request(app)
-            .put(`/api/projects/${project}`)
-            .send({
-                title: 'Update Test Project',
-                image_url: 'http://www.testing.com',
-                description: 'http://www.testing.com',
-                github_url: 'http://www.testing.com',
-                deployed_url: 'http://www.testing.com',
-                user_id: user._id
-            })
-        expect(res.statusCode).toEqual(200)
-        expect(res.body).toHaveProperty('_id')
-        done()
-    }),
-    it('should delete a project', async done => {
-        const res = await request(app).del(`/api/projects/${project}`)
-        expect(res.statusCode).toEqual(200)
-        expect(res.text).toEqual("Project deleted")
-        done()
-    })
-})
+    it("should delete a project", async done => {
+      const res = await request(app).del(`/api/projects/${project}`);
+      expect(res.statusCode).toEqual(200);
+      expect(res.text).toEqual("Project deleted");
+      done();
+    });
+});
 
 afterAll(async () => {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
-})
+  await mongoose.connection.db.dropDatabase();
+  await mongoose.connection.close();
+});
 ```
 
 Let's edit our script file:
 
 mongodb-mongoose-express-ci/package.json
+
 ```js
   "scripts": {
     "test": "jest tests --detectOpenHandles",
@@ -544,6 +564,7 @@ PASS!
 ##
 
 ![](https://docs.travis-ci.com/images/TravisCI-Full-Color.png)
+
 > source travis-ci.org
 
 ## Continuous Integration
@@ -577,7 +598,7 @@ Add the following to .travis.yml:
 ```yml
 language: node_js
 node_js:
-  - 'stable'
+  - "stable"
 install: npm install
 services:
   - mongodb
@@ -601,7 +622,7 @@ touch .coveralls.yml
 
 1. Go to the [Coveralls](https://coveralls.io) website and sign up.
 
-2. Add your repo. 
+2. Add your repo.
 
 3. Click on your repo inside the coveralls website. Copy the repo_token. Paste it inside of .coveralls.yml
 
@@ -723,7 +744,7 @@ Now we're ready to deploy to Heroku and specify our MongoDB Atlas URI connection
 1. `heroku create your-heroku-app-name`
 2. `heroku buildpacks:set heroku/nodejs`
 3. `heroku config:set PROD_MONGODB="<INSERT YOUR MONGODB URI CONNECTION STRING HERE>"`
-    - replace the word test in your connection string with the name of your a database: projectsDatabase
+   - replace the word test in your connection string with the name of your a database: projectsDatabase
 
 ### Adding Deployment to the Travis CI Build
 
@@ -750,10 +771,10 @@ Ok, our .travis.yml file should now look something like this:
 ```yml
 language: node_js
 node_js:
-- stable
+  - stable
 install: npm install
 services:
-- mongodb
+  - mongodb
 script: npm test
 after_success: npm run coverage
 deploy:
@@ -766,6 +787,7 @@ deploy:
   run:
     - "node seed/userProjects.js"
 ```
+
 > Don't forget the last command to seed the database.
 
 ```sh
@@ -780,7 +802,7 @@ And watch the Travis build for:
 1. Successful Heroku deployment.
 1. Successful seeding of database.
 
-Once the build is complete, test the endpoints on Heroku to confirm: 
+Once the build is complete, test the endpoints on Heroku to confirm:
 
 - https://your-heroku-app-name.herokuapp.com/api/users
 
